@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  /* Neutral surfaces (dashboard) */
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #fafafb;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-text-faint: #98a2b3;
+
+  /* Brand — Scraping Bird, matched to the reference site's exact yellow */
+  --color-brand: #ffc91f;
+  --color-brand-light: #ffd655;
+  --color-brand-border: #bd9002;
+  --color-brand-50: #fffbeb;
+  --color-ink: #0f0f0e;
+
+  /* Dashboard "primary" now maps to ink (black), matching the reference
+     site's pattern: yellow is the brand/background color, black is what
+     primary buttons actually use for contrast + legibility. */
+  --color-primary: #0f0f0e;
+  --color-primary-hover: #262624;
+  --color-primary-subtle: #fff8e1;
+
+  --color-success: #067647;
+  --color-success-subtle: #ecfdf3;
+  --color-warning: #b54708;
+  --color-warning-subtle: #fffaeb;
+  --color-danger: #b42318;
+  --color-danger-subtle: #fef3f2;
+  --color-info: #175cd3;
+  --color-info-subtle: #eff8ff;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(16 24 40 / 0.1), 0 1px 2px -1px rgb(16 24 40 / 0.1);
+}
+
+/* Custom base styles must live in @layer base — unlayered CSS beats every
+   Tailwind utility regardless of specificity, which silently breaks things
+   like text-white on an <a> if a bare `a { color: inherit }` rule exists
+   outside a layer. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    padding: 0;
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-ink);
+  }
+}
+
+@layer utilities {
+  .diagonal-cut-bottom {
+    clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+  }
+}
