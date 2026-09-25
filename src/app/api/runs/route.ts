@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveRunLimits } from "@/lib/agent/limits";
 import { runAgent } from "@/lib/agent/runAgent";
+import { validateObjective } from "@/lib/agent/validateObjective";
 
 const createRunSchema = z.object({
   objective: z.string().trim().min(10, "Describe the qualification objective in a bit more detail."),
@@ -24,6 +25,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request." }, {
       status: 400,
     });
+  }
+
+  const objectiveCheck = await validateObjective(parsed.data.objective);
+  if (!objectiveCheck.ok) {
+    return NextResponse.json({ error: objectiveCheck.error }, { status: 400 });
   }
 
   const limits = resolveRunLimits(parsed.data.limits);

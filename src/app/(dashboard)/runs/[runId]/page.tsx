@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Building2,
   ChevronDown,
+  Download,
   Globe2,
   ListChecks,
   Loader2,
@@ -84,7 +85,7 @@ export default function RunPage({ params }: { params: Promise<{ runId: string }>
             <LiveActivityBanner run={detail.run} toolCalls={detail.toolCalls} />
           )}
           <IcpCard icp={detail.run.refined_icp} />
-          <LeadsSection leads={detail.leads} />
+          <LeadsSection leads={detail.leads} runId={runId} runStatus={detail.run.status} />
           <ToolCallsSection toolCalls={detail.toolCalls} />
         </div>
       )}
@@ -160,6 +161,13 @@ function RunSummary({ run, leadCount }: { run: RunRow; leadCount: number }) {
         <p className="mt-4 rounded-lg bg-danger-subtle px-3 py-2 text-sm text-danger">
           {run.error_message}
         </p>
+      )}
+
+      {run.status === "completed" && run.summary && (
+        <div className="mt-4 rounded-lg bg-bg px-3.5 py-3">
+          <p className="mb-1 text-xs font-medium text-text-faint">Agent&apos;s summary</p>
+          <p className="text-sm text-text">{run.summary}</p>
+        </div>
       )}
     </div>
   );
@@ -246,10 +254,21 @@ function ChipField({
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
-      <h2 className="mb-4 text-sm font-semibold text-text">{title}</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-text">{title}</h2>
+        {action}
+      </div>
       {children}
     </div>
   );
@@ -270,13 +289,49 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
-function LeadsSection({ leads }: { leads: LeadRow[] }) {
+function ExportButtons({ runId }: { runId: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <a
+        href={`/api/runs/${runId}/export?format=pdf`}
+        className="flex items-center gap-1.5 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-medium text-text hover:bg-surface-hover"
+      >
+        <Download size={13} strokeWidth={2.25} />
+        PDF
+      </a>
+      <a
+        href={`/api/runs/${runId}/export?format=docx`}
+        className="flex items-center gap-1.5 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-medium text-text hover:bg-surface-hover"
+      >
+        <Download size={13} strokeWidth={2.25} />
+        DOCX
+      </a>
+    </div>
+  );
+}
+
+function LeadsSection({
+  leads,
+  runId,
+  runStatus,
+}: {
+  leads: LeadRow[];
+  runId: string;
+  runStatus: RunRow["status"];
+}) {
   const qualified = leads.filter((l) => l.qualification_status === "qualified");
   const needsReview = leads.filter((l) => l.qualification_status === "needs_review");
   const notQualified = leads.filter((l) => l.qualification_status === "not_qualified");
 
   return (
-    <SectionCard title={`Leads (${leads.length})`}>
+    <SectionCard
+      title={`Leads (${leads.length})`}
+      action={
+        runStatus === "completed" && qualified.length > 0 ? (
+          <ExportButtons runId={runId} />
+        ) : undefined
+      }
+    >
       {leads.length === 0 ? (
         <p className="text-sm text-text-muted">No leads saved yet.</p>
       ) : (

@@ -33,6 +33,7 @@ export type RunRow = {
   limits: RunLimits;
   status: RunStatus;
   error_message: string | null;
+  summary: string | null;
   created_at: string;
   completed_at: string | null;
 };

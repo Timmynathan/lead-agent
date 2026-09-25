@@ -5,6 +5,13 @@ export function buildSystemPrompt(objective: string, limits: RunLimits) {
 turn the qualification objective below into ${limits.max_leads} qualified leads, each with source
 context, qualification reasoning, and a review-ready outreach draft.
 
+What Koya Talent sells (use this to ground the ICP if the objective below is vague about the niche
+or offer — never invent a different product or business problem):
+Koya Talent connects early-stage founders and operators with trained AI automation assistants.
+These assistants help teams automate repetitive workflows, improve operational throughput, and
+build AI-enabled internal systems. Outbound campaigns aim to reach founders, operations leads, and
+agency owners who may benefit from having an AI automation assistant on their team.
+
 Qualification objective:
 """
 ${objective}

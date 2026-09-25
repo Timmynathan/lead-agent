@@ -47,7 +47,7 @@ export function withLogging<Args>(
     try {
       const result = await handler(args);
 
-      await supabase.from("tool_calls").insert({
+      const { error: logError } = await supabase.from("tool_calls").insert({
         run_id: runId,
         tool_name: toolName,
         purpose,
@@ -56,6 +56,9 @@ export function withLogging<Args>(
         status: result.isError ? "error" : "success",
         error_message: result.isError ? summarizeResult(result) : null,
       });
+      if (logError) {
+        console.error(`withLogging: failed to log ${toolName} for run ${runId}`, logError);
+      }
 
       return result;
     } catch (error) {

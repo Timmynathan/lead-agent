@@ -13,6 +13,47 @@ const ALLOWED_TOOLS = [
 ];
 
 /**
+ * Writes the run's final status. Tries the full update first; if that fails
+ * (for example because the `summary` column hasn't been migrated in yet),
+ * falls back to updating just the fields that matter most — status and
+ * completed_at — rather than silently leaving the run stuck on "running"
+ * forever. A run's terminal status must never be lost to a write error.
+ */
+async function finalizeRun(
+  runId: string,
+  fields: {
+    status: "completed" | "failed";
+    error_message: string | null;
+    summary: string | null;
+  }
+) {
+  const supabase = getSupabaseServerClient();
+  const completed_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("runs")
+    .update({ ...fields, completed_at })
+    .eq("id", runId);
+
+  if (!error) return;
+
+  console.error(`runAgent: full finalize update failed for run ${runId}, retrying without summary`, error);
+
+  const { error: fallbackError } = await supabase
+    .from("runs")
+    .update({
+      status: fields.status,
+      error_message: fields.error_message,
+      completed_at,
+    })
+    .eq("id", runId);
+
+  if (fallbackError) {
+    console.error(`runAgent: fallback finalize update also failed for run ${runId}`, fallbackError);
+  }
+}
+
+/**
  * Runs the agent for a run row that's already been inserted with status
  * "pending". Intended to be invoked without being awaited by the request
  * handler (via waitUntil) so the HTTP response can return the runId
@@ -32,7 +73,13 @@ export async function runAgent(runId: string) {
     return;
   }
 
-  await supabase.from("runs").update({ status: "running" }).eq("id", runId);
+  const { error: runningError } = await supabase
+    .from("runs")
+    .update({ status: "running" })
+    .eq("id", runId);
+  if (runningError) {
+    console.error(`runAgent: failed to mark run ${runId} as running`, runningError);
+  }
 
   try {
     const leadResearchServer = createLeadResearchServer(runId, run.limits);
@@ -62,24 +109,14 @@ export async function runAgent(runId: string) {
       }
     }
 
-    await supabase
-      .from("runs")
-      .update({
-        status: succeeded ? "completed" : "failed",
-        error_message: succeeded ? null : finalText,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", runId);
+    await finalizeRun(runId, {
+      status: succeeded ? "completed" : "failed",
+      error_message: succeeded ? null : finalText,
+      summary: succeeded ? finalText : null,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`runAgent: run ${runId} threw`, error);
-    await supabase
-      .from("runs")
-      .update({
-        status: "failed",
-        error_message: message,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", runId);
+    await finalizeRun(runId, { status: "failed", error_message: message, summary: null });
   }
 }
